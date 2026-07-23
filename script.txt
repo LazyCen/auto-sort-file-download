@@ -1,0 +1,45 @@
+#!/bin/bash
+# Fixed original background sorter
+TARGET="$HOME/Downloads"
+
+# Create standard target directories if missing
+mkdir -p "$HOME/Pictures" "$HOME/Videos" "$HOME/Documents" "$HOME/Music" "$HOME/Downloads/Databases" "$HOME/Downloads/Executables"
+
+inotifywait -m -e close_write --format "%f" "$TARGET" | while read -r FILE
+do
+    # Ignore unfinished browser downloads
+    if [[ "$FILE" =~ \.(crdownload|tmp)$ ]]; then
+        continue
+    fi
+
+    # Safely handle files without extensions
+    if [[ "$FILE" != *.* ]]; then
+        continue
+    fi
+
+    # Extract extension and force lowercase matching
+    EXT="${FILE##*.}"
+    EXT_LOWER=$(echo "$EXT" | tr '[:upper:]' '[:lower:]')
+
+    case "$EXT_LOWER" in
+        # Fixed: Explicitly handles both jpg and jpeg
+        jpg|jpeg|png|gif|webp|svg|bmp)
+            mv "$TARGET/$FILE" "$HOME/Pictures/" ;;
+        
+        # Videos -> Videos
+        mp4|mkv|mov|avi|flv|wmv|webm)
+            mv "$TARGET/$FILE" "$HOME/Videos/" ;;
+        
+        # Documents -> Documents
+        doc|docx|ppt|pptx|xls|xlsx|pdf|odt|txt)
+            mv "$TARGET/$FILE" "$HOME/Documents/" ;;
+            
+        # Audio -> Music
+        mp3|wav|flac|m4a|ogg)
+            mv "$TARGET/$FILE" "$HOME/Music/" ;;
+            
+        *)
+            # Leaves unknown file types safely in the main Downloads folder
+            ;;
+    esac
+done
